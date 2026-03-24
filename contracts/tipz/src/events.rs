@@ -13,7 +13,15 @@
 
 // TODO: Implement remaining event emission helpers in issue #6
 
-use soroban_sdk::{symbol_short, Address, Env};
+use soroban_sdk::{symbol_short, Address, Env, String};
+
+/// Emit a `ProfileRegistered` event containing the creator's address and username.
+pub fn emit_profile_registered(env: &Env, address: &Address, username: &String) {
+    env.events().publish(
+        (symbol_short!("profile"), symbol_short!("register")),
+        (address.clone(), username.clone()),
+    );
+}
 
 pub fn emit_tip_sent(env: &Env, from: &Address, to: &Address, amount: i128) {
     env.events().publish(

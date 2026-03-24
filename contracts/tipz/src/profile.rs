@@ -4,7 +4,7 @@ use soroban_sdk::{Address, Env, String};
 
 use crate::errors::ContractError;
 use crate::events;
-use crate::storage::DataKey;
+use crate::storage;
 use crate::types::Profile;
 
 /// Returns `true` if the username meets format requirements:
@@ -70,7 +70,7 @@ pub fn register_profile(
     caller.require_auth();
 
     // Contract must be initialised before profiles can be created.
-    if !env.storage().instance().has(&DataKey::Initialized) {
+    if !storage::is_initialized(env) {
         return Err(ContractError::NotInitialized);
     }
 
@@ -100,20 +100,12 @@ pub fn register_profile(
     // --- Duplicate checks ---
 
     // Each address may only register once.
-    if env
-        .storage()
-        .persistent()
-        .has(&DataKey::Profile(caller.clone()))
-    {
+    if storage::has_profile(env, &caller) {
         return Err(ContractError::AlreadyRegistered);
     }
 
     // Each username must be unique across the platform.
-    if env
-        .storage()
-        .persistent()
-        .has(&DataKey::UsernameToAddress(username.clone()))
-    {
+    if storage::get_username_address(env, &username).is_some() {
         return Err(ContractError::UsernameTaken);
     }
 
@@ -139,25 +131,9 @@ pub fn register_profile(
         updated_at: now,
     };
 
-    // Store profile keyed by the creator's address.
-    env.storage()
-        .persistent()
-        .set(&DataKey::Profile(caller.clone()), &profile);
-
-    // Store reverse lookup so profiles can be fetched by username.
-    env.storage()
-        .persistent()
-        .set(&DataKey::UsernameToAddress(username.clone()), &caller);
-
-    // Increment the global creator counter.
-    let total: u32 = env
-        .storage()
-        .instance()
-        .get(&DataKey::TotalCreators)
-        .unwrap_or(0);
-    env.storage()
-        .instance()
-        .set(&DataKey::TotalCreators, &(total + 1));
+    storage::set_profile(env, &profile);
+    storage::set_username_address(env, &username, &caller);
+    storage::increment_total_creators(env);
 
     // Emit ProfileRegistered event.
     events::emit_profile_registered(env, &caller, &username);
