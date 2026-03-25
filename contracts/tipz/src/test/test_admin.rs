@@ -11,7 +11,10 @@
 
 #![cfg(test)]
 
-use soroban_sdk::{ testutils::Address as _, Address, Env };
+use soroban_sdk::{
+    testutils::{Address as _, Events},
+    Address, Env,
+};
 
 use crate::errors::ContractError;
 use crate::storage::DataKey;
@@ -41,7 +44,9 @@ fn setup() -> TestCtx<'static> {
 
     // Register a native-token SAC so `initialize` succeeds
     let token_admin = Address::generate(&env);
-    let native_token = env.register_stellar_asset_contract_v2(token_admin).address();
+    let native_token = env
+        .register_stellar_asset_contract_v2(token_admin)
+        .address();
 
     client.initialize(&admin, &fee_collector, &200_u32, &native_token);
 
@@ -61,7 +66,11 @@ fn test_set_fee_updates_stored_value() {
     ctx.client.set_fee(&ctx.admin, &500_u32);
 
     let stored: u32 = ctx.env.as_contract(&ctx.client.address, || {
-        ctx.env.storage().instance().get(&DataKey::FeePercent).unwrap()
+        ctx.env
+            .storage()
+            .instance()
+            .get(&DataKey::FeePercent)
+            .unwrap()
     });
     assert_eq!(stored, 500);
 }
@@ -72,7 +81,11 @@ fn test_set_fee_boundary_1000_succeeds() {
     ctx.client.set_fee(&ctx.admin, &1000_u32);
 
     let stored: u32 = ctx.env.as_contract(&ctx.client.address, || {
-        ctx.env.storage().instance().get(&DataKey::FeePercent).unwrap()
+        ctx.env
+            .storage()
+            .instance()
+            .get(&DataKey::FeePercent)
+            .unwrap()
     });
     assert_eq!(stored, 1000);
 }
@@ -83,7 +96,11 @@ fn test_set_fee_zero_succeeds() {
     ctx.client.set_fee(&ctx.admin, &0_u32);
 
     let stored: u32 = ctx.env.as_contract(&ctx.client.address, || {
-        ctx.env.storage().instance().get(&DataKey::FeePercent).unwrap()
+        ctx.env
+            .storage()
+            .instance()
+            .get(&DataKey::FeePercent)
+            .unwrap()
     });
     assert_eq!(stored, 0);
 }
@@ -110,7 +127,10 @@ fn test_set_fee_emits_fee_updated_event() {
     ctx.client.set_fee(&ctx.admin, &300_u32);
 
     let events = ctx.env.events().all();
-    assert!(!events.is_empty(), "expected a FeeUpdated event to be emitted");
+    assert!(
+        !events.is_empty(),
+        "expected a FeeUpdated event to be emitted"
+    );
 }
 
 // ── set_fee_collector ─────────────────────────────────────────────────────────
@@ -123,7 +143,11 @@ fn test_set_fee_collector_updates_stored_address() {
     ctx.client.set_fee_collector(&ctx.admin, &new_collector);
 
     let stored: Address = ctx.env.as_contract(&ctx.client.address, || {
-        ctx.env.storage().instance().get(&DataKey::FeeCollector).unwrap()
+        ctx.env
+            .storage()
+            .instance()
+            .get(&DataKey::FeeCollector)
+            .unwrap()
     });
     assert_eq!(stored, new_collector);
 }
@@ -144,7 +168,10 @@ fn test_set_fee_collector_emits_event() {
     ctx.client.set_fee_collector(&ctx.admin, &new_collector);
 
     let events = ctx.env.events().all();
-    assert!(!events.is_empty(), "expected a FeeCollectorUpdated event to be emitted");
+    assert!(
+        !events.is_empty(),
+        "expected a FeeCollectorUpdated event to be emitted"
+    );
 }
 
 // ── set_admin ─────────────────────────────────────────────────────────────────
@@ -185,7 +212,11 @@ fn test_set_admin_new_admin_gains_access() {
     ctx.client.set_fee(&new_admin, &100_u32);
 
     let stored: u32 = ctx.env.as_contract(&ctx.client.address, || {
-        ctx.env.storage().instance().get(&DataKey::FeePercent).unwrap()
+        ctx.env
+            .storage()
+            .instance()
+            .get(&DataKey::FeePercent)
+            .unwrap()
     });
     assert_eq!(stored, 100);
 }
@@ -206,5 +237,8 @@ fn test_set_admin_emits_admin_changed_event() {
     ctx.client.set_admin(&ctx.admin, &new_admin);
 
     let events = ctx.env.events().all();
-    assert!(!events.is_empty(), "expected an AdminChanged event to be emitted");
+    assert!(
+        !events.is_empty(),
+        "expected an AdminChanged event to be emitted"
+    );
 }

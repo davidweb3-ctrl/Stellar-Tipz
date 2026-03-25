@@ -241,11 +241,7 @@ impl TipzContract {
     /// Transfer the admin role to a new address. Admin only.
     ///
     /// Emits an `AdminChanged` event with `(old_admin, new_admin)`.
-    pub fn set_admin(
-        env: Env,
-        caller: Address,
-        new_admin: Address,
-    ) -> Result<(), ContractError> {
+    pub fn set_admin(env: Env, caller: Address, new_admin: Address) -> Result<(), ContractError> {
         admin::set_admin(&env, &caller, &new_admin)
     }
 

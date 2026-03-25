@@ -4,12 +4,12 @@
 //! - Fee management
 //! - Admin role transfer
 
-use soroban_sdk::{ Address, Env, Vec };
+use soroban_sdk::{Address, Env, Vec};
 
 use crate::credit;
 use crate::errors::ContractError;
 use crate::events;
-use crate::storage::{ self, DataKey };
+use crate::storage::{self, DataKey};
 
 pub fn require_admin(env: &Env, caller: &Address) -> Result<(), ContractError> {
     if !storage::is_initialized(env) {
@@ -29,7 +29,7 @@ pub fn initialize(
     admin: &Address,
     fee_collector: &Address,
     fee_bps: u32,
-    native_token: &Address
+    native_token: &Address,
 ) -> Result<(), ContractError> {
     storage::extend_instance_ttl(env);
 
@@ -46,10 +46,16 @@ pub fn initialize(
     storage::set_native_token(env, native_token);
 
     // Initialise counters to zero so reads never return None.
-    env.storage().instance().set(&DataKey::TotalCreators, &0_u32);
+    env.storage()
+        .instance()
+        .set(&DataKey::TotalCreators, &0_u32);
     env.storage().instance().set(&DataKey::TipCount, &0_u32);
-    env.storage().instance().set(&DataKey::TotalTipsVolume, &0_i128);
-    env.storage().instance().set(&DataKey::TotalFeesCollected, &0_i128);
+    env.storage()
+        .instance()
+        .set(&DataKey::TotalTipsVolume, &0_i128);
+    env.storage()
+        .instance()
+        .set(&DataKey::TotalFeesCollected, &0_i128);
 
     Ok(())
 }
@@ -63,7 +69,7 @@ fn apply_x_metrics_to_profile(
     env: &Env,
     creator: &Address,
     x_followers: u32,
-    x_engagement_avg: u32
+    x_engagement_avg: u32,
 ) {
     let mut profile = storage::get_profile(env, creator);
     let old_score = profile.credit_score;
@@ -88,7 +94,7 @@ pub fn update_x_metrics(
     caller: &Address,
     creator: &Address,
     x_followers: u32,
-    x_engagement_avg: u32
+    x_engagement_avg: u32,
 ) -> Result<(), ContractError> {
     storage::extend_instance_ttl(env);
     require_admin(env, caller)?;
@@ -107,7 +113,7 @@ pub fn update_x_metrics(
 pub fn batch_update_x_metrics(
     env: &Env,
     caller: &Address,
-    updates: Vec<(Address, u32, u32)>
+    updates: Vec<(Address, u32, u32)>,
 ) -> Result<u32, ContractError> {
     storage::extend_instance_ttl(env);
     require_admin(env, caller)?;
@@ -137,4 +143,38 @@ pub fn bump_ttl(env: &Env, caller: &Address) -> Result<(), ContractError> {
     Ok(())
 }
 
-// TODO: Implement set_fee, set_fee_collector, set_admin in issues #20, #21, #22
+/// Update the withdrawal fee in basis points (max 1000 = 10%). Admin only.
+pub fn set_fee(env: &Env, caller: &Address, fee_bps: u32) -> Result<(), ContractError> {
+    storage::extend_instance_ttl(env);
+    require_admin(env, caller)?;
+    if fee_bps > 1000 {
+        return Err(ContractError::InvalidFee);
+    }
+    let old_bps = storage::get_fee_bps(env);
+    storage::set_fee_bps(env, fee_bps);
+    events::emit_fee_updated(env, old_bps, fee_bps);
+    Ok(())
+}
+
+/// Update the fee collector address. Admin only.
+pub fn set_fee_collector(
+    env: &Env,
+    caller: &Address,
+    new_collector: &Address,
+) -> Result<(), ContractError> {
+    storage::extend_instance_ttl(env);
+    require_admin(env, caller)?;
+    storage::set_fee_collector(env, new_collector);
+    events::emit_fee_collector_updated(env, new_collector);
+    Ok(())
+}
+
+/// Transfer the admin role to a new address. Admin only.
+pub fn set_admin(env: &Env, caller: &Address, new_admin: &Address) -> Result<(), ContractError> {
+    storage::extend_instance_ttl(env);
+    require_admin(env, caller)?;
+    let old_admin = storage::get_admin(env);
+    storage::set_admin(env, new_admin);
+    events::emit_admin_changed(env, &old_admin, new_admin);
+    Ok(())
+}
