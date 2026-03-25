@@ -33,41 +33,6 @@ fn native_token_address(env: &Env) -> Address {
         .address()
 }
 
-fn insert_profile_with_username(
-    env: &Env,
-    client: &TipzContractClient<'_>,
-    owner: &Address,
-    username: &str,
-) {
-    let now = env.ledger().timestamp();
-    let profile = Profile {
-        owner: owner.clone(),
-        username: String::from_str(env, username),
-        display_name: String::from_str(env, "Creator"),
-        bio: String::from_str(env, ""),
-        image_url: String::from_str(env, ""),
-        x_handle: String::from_str(env, "creator_x"),
-        x_followers: 0,
-        x_engagement_avg: 0,
-        credit_score: 40,
-        total_tips_received: 0,
-        total_tips_count: 0,
-        balance: 0,
-        registered_at: now,
-        updated_at: now,
-    };
-
-    env.as_contract(&client.address, || {
-        env.storage()
-            .persistent()
-            .set(&DataKey::Profile(owner.clone()), &profile);
-    });
-}
-
-fn insert_profile(env: &Env, client: &TipzContractClient<'_>, owner: &Address) {
-    insert_profile_with_username(env, client, owner, "creator");
-}
-
 #[test]
 fn test_initialize_sets_state_correctly() {
     let (env, client) = setup_env();
@@ -76,7 +41,11 @@ fn test_initialize_sets_state_correctly() {
     let token_address = native_token_address(&env);
     let fee_bps: u32 = 200; // 2%
 
+<<<<<<< HEAD
     client.initialize(&admin, &fee_collector, &fee_bps, &token_address);
+=======
+    client.initialize(&admin, &fee_collector, &fee_bps, &dummy_token(&env));
+>>>>>>> b50c5af (feat(#22): add profile registration tests and fix pre-existing compile errors)
 
     // Verify stored values via raw storage access
     let stored_admin: Address = env.as_contract(&client.address, || {

@@ -4,7 +4,7 @@
 //! bounded lifetime, while aggregate counters remain in persistent contract
 //! state.
 
-use soroban_sdk::{Address, Env, String, Vec};
+use soroban_sdk::{token, Address, Env, String, Vec};
 
 use crate::errors::ContractError;
 use crate::events::emit_tip_sent;
@@ -57,7 +57,6 @@ pub fn get_recent_tips(env: &Env, creator: &Address, count: u32) -> Vec<Tip> {
 
     while index > 0 && found < count {
         index -= 1;
-
         if let Some(tip) = env
             .storage()
             .temporary()
@@ -109,6 +108,7 @@ pub fn send_tip(
     storage::set_profile(env, &profile);
 
     store_tip(env, tipper, creator, amount, message.clone());
+
     storage::add_to_tips_volume(env, amount);
 
     emit_tip_sent(env, tipper, creator, amount);
