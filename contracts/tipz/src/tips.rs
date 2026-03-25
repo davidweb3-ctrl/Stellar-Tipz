@@ -168,8 +168,8 @@ pub fn withdraw_tips(env: &Env, caller: &Address, amount: i128) -> Result<(), Co
         storage::add_to_fees(env, fee);
     }
 
-    // Emit withdrawal event
-    crate::events::emit_tips_withdrawn(env, caller, amount, fee);
+    // Emit withdrawal event: (creator, net, fee)
+    crate::events::emit_tips_withdrawn(env, caller, net, fee);
 
     Ok(())
 }
